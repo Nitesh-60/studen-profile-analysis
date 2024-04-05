@@ -4,19 +4,22 @@ import StudentInfo from './StudentInfo';
 import CocurricularActivities from './CocurricularActivities';
 import ExtraCurricullarActivities from './ExtraCurricullarActivities';
 import Header from './Header';
+import { Provider } from 'react-redux';
+import store from '../utils/store';
+
 
 const CHECKOUT_STEPS = [
     {
       name: "Student Info",
-      Component: () => <StudentInfo />,
+      Component: () => <Provider store={store}><StudentInfo /></Provider>,
     },
     {
       name: "Co-Curricular Activities",
-      Component: () => <CocurricularActivities />,
+      Component: () => <Provider store={store}><CocurricularActivities /></Provider>,
     },
     {
       name: "Extra-Curricular Activities",
-      Component: () => <ExtraCurricullarActivities />,
+      Component: () => <Provider store={store}><ExtraCurricullarActivities /></Provider>,
     }
     // {
     //   name: "Delivered",

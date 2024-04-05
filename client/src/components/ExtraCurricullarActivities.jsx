@@ -1,16 +1,16 @@
 import React, { useState } from "react";
+import { useDispatch, useSelector } from 'react-redux';
+import { setActivity } from '../features/extraCurricularInfo/extracurricularSlice';
+
 
 const ExtracurricularActivities = () => {
-  const [activities, setActivities] = useState({
-    soujournOrZephyr: "",
-    nss: "",
-    helpToSociety: "",
-    sportsOrInertia: "",
-    eWeekOrEdcProject: "",
-  });
+
+  const dispatch = useDispatch();
+  const activities = useSelector((state) => state.extracurricular.activities);
+
 
   const handleChange = (activityType, value) => {
-    setActivities({ ...activities, [activityType]: value });
+    dispatch(setActivity({ activityType, value }));
   };
 
   const calculateScore = () => {

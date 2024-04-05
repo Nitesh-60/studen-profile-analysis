@@ -1,8 +1,12 @@
 /* eslint-disable react/prop-types */
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const CheckoutStepper = ({ stepsConfig = [] }) => {
+
+  const navigate = useNavigate(); // Initialize useHistory
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isComplete, setIsComplete] = useState(false);
   const stepRef = useRef([]);
@@ -19,6 +23,7 @@ const CheckoutStepper = ({ stepsConfig = [] }) => {
     setCurrentStep((prevStep) => {
       if (prevStep === stepsConfig.length) {
         setIsComplete(true);
+        navigate("/profile"); // Redirect to '/profile' page
         return prevStep;
       } else {
         return prevStep + 1;

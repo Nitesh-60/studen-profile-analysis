@@ -1,31 +1,36 @@
 import React, { useState } from "react";
+import { useSelector, useDispatch } from 'react-redux';
+import { updateInhouseActivity, updateOuthouseActivity } from '../features/cocurricularActivitiesInfo/activitiesSlice';
+
 
 const CocurricularActivities = () => {
-  const [inhouseActivities, setInhouseActivities] = useState({
-    onlineCertificateCourse: "",
-    seminarAttended: "",
-    departmentSupportProject: "",
-    workshopAttended: "",
-    paperPresentedInhouse: "",
-    bridgeCourseAttended: "",
-    eventOrganized: "",
-  });
 
-  const [outhouseActivities, setOuthouseActivities] = useState({
-    PaperPresentedOutHouse: "",
-    ProjectCompetitionOrHackathon: "",
-    Internship: "",
-    CompetitiveExam: "",
-    OnlineCertificateCourse: "",
-    PatentPublished: "",
-  });
+  const inhouseActivities = useSelector(state => state.activities.inhouseActivities);
+  const outhouseActivities = useSelector(state => state.activities.outhouseActivities);
+  const dispatch = useDispatch();
+
 
   const handleChange = (activityType, value) => {
-    setInhouseActivities({ ...inhouseActivities, [activityType]: value });
+    dispatch(updateInhouseActivity({ activityType, value }));
   };
+
   const handleOutHouseChange = (activityType, value) => {
-    setOuthouseActivities({ ...outhouseActivities, [activityType]: value });
+    dispatch(updateOuthouseActivity({ activityType, value }));
   };
+
+  const calculateScore = (activities, weight) => {
+    let totalMarks = 0;
+    Object.values(activities).forEach((activity) => {
+      if (activity === "Yes") {
+        totalMarks += weight;
+      }
+    });
+    return (totalMarks / 100) * 10;
+  };
+
+  const inhouseScore = calculateScore(inhouseActivities, 10);
+  const outhouseScore = calculateScore(outhouseActivities, 10);
+
   return (
     <div className="flex flex-col lg:flex-row justify-center items-center space-y-8 lg:space-y-0 lg:space-x-12 p-8">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full lg:w-1/2">
@@ -99,6 +104,20 @@ const CocurricularActivities = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+      {/* Score display */}
+      <div className="bg-white rounded-lg shadow-lg p-6 w-full lg:w-1/2 mt-8">
+        <h2 className="text-lg font-semibold mb-4 text-center lg:text-left">Score Summary</h2>
+        <div className="space-y-4">
+          <div className="flex justify-between">
+            <span>In-house Score:</span>
+            <span>{inhouseScore}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Outhouse Score:</span>
+            <span>{outhouseScore}</span>
+          </div>
         </div>
       </div>
     </div>
