@@ -1,111 +1,91 @@
-import React, {useRef, useState } from 'react';
+import React, { useState } from 'react';
 import Header from './Header';
-import { checkValidData } from "../utils/validate";
-import { auth } from "../utils/firebase.config";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  updateProfile,
-} from "firebase/auth";
+import axios from 'axios'; // Import Axios
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { addUser } from "../features/registerUser/userSlice";
 
 const Login = () => {
     const [loginPage, setLoginPage] = useState(false);
-    const [errorMessage, setErrorMessage] = useState(null);
-    
+    const [formData, setFormData] = useState({
+        fullName: '',
+        email: '',
+        password: '',
+    });
     const navigate = useNavigate();
-    const dispatch = useDispatch();
 
-    const name = useRef(null);
-    const email = useRef(null);
-    const password = useRef(null);
-    
     const handleRegisterToggle = () => {
         setLoginPage(!loginPage);
     };
 
-    const handleButtonClick = () => {
-        // validate email and password
-        const message = checkValidData(
-            email?.current?.value,
-            password?.current?.value
-        );
-        setErrorMessage(message);
-    
-        if (message) return;
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+          ...prevData,
+          [name]: value,
+        }));
+      };
 
-        if (loginPage) {
-            createUserWithEmailAndPassword(
-              auth,
-              email.current.value,
-              password.current.value
-            )
-            .then((userCredential) => {
-                // Signed up
-                const user = userCredential.user;
-                updateProfile(user, {
-                  displayName: name.current.value,
-                  photoURL:
-                    "https://as2.ftcdn.net/v2/jpg/05/76/79/91/1000_F_576799177_EkgYsiqo2AUMtoxUFIzbAutSOtHrCusD.jpg",
-                })
-                .then(() => {
-                    const { uid, displayName, email, photoURL } = auth.currentUser;
-                    dispatch(
-                      addUser({
-                        uid: uid,
-                        displayName: displayName,
-                        email: email,
-                        photoURL: photoURL,
-                      })
-                    );
-                    navigate("/dataform");
-                  })
-                  .catch((error) => {
-                    // An error occurred
-                    // ...
-                    setErrorMessage(error.message);
-                  });
-              })
-              .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                setErrorMessage(errorCode + " - " + errorMessage);
-              });
+      const handleRegister = async (e) => {
+        e.preventDefault();
+        try {
+          const response = await fetch('http://localhost:5000/register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+          });
+          if (response.ok) {
+            // Registration successful
+            console.log('Registration successful:', formData);
+            navigate('/dataform'); // Redirect to dataform page after registration
           } else {
-            signInWithEmailAndPassword(
-              auth,
-              email.current.value,
-              password.current.value
-            )
-              .then((userCredential) => {
-                // Signed in
-                const user = userCredential.user;
-                // ...
-              })
-              .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                setErrorMessage(errorCode + " - " + errorMessage);
-              });
+            // Registration failed
+            console.error('Registration failed');
           }
-    };
+        } catch (error) {
+          console.error('Registration error:', error);
+        }
+      };
+    
 
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+          const response = await fetch('http://localhost:5000/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+          });
+          if (response.ok) {
+            // Login successful
+            console.log('Login successful:', formData);
+            navigate('/dataform'); // Redirect to profile page after login
+          } else {
+            // Login failed
+            console.error('Login failed');
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+        }
+      };
 
-    return (
+    return ( 
         <><Header />
         <div className='flex justify-center items-center min-h-screen bg-gray-100'>
             <div className='sm:w-1/3 w-full bg-white shadow-lg rounded-lg p-8'>
                 {loginPage ? (
                     <div>
                         <h1 className='text-3xl font-bold mb-6 text-center'>Login</h1>
-                        <form className='space-y-4' onSubmit={(e) => e.preventDefault()}>
+                        <form className='space-y-4' onSubmit={handleLogin}>
                             <div>
                                 <label className='block mb-1'>Email</label>
                                 <input
-                                    ref={email}
-                                    type='text'
+                                    type='email'
+                                    name='email'
+                                    value={formData.email}
+                                    onChange={handleChange}
                                     placeholder='Email'
                                     className='w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500'
                                 />
@@ -113,8 +93,10 @@ const Login = () => {
                             <div>
                                 <label className='block mb-1'>Password</label>
                                 <input
-                                    ref={password}
                                     type='password'
+                                    name='password'
+                                    value={formData.password}
+                                    onChange={handleChange}
                                     placeholder='Password'
                                     className='w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500'
                                 />
@@ -123,7 +105,6 @@ const Login = () => {
                                 className='w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition duration-300'
                                 type='submit'
                                 value='Login'
-                                onClick={handleButtonClick}
                             >
                                 Login
                             </button>
@@ -139,12 +120,14 @@ const Login = () => {
                 ) : (
                     <div>
                         <h1 className='text-3xl font-bold mb-6 text-center'>Register</h1>
-                        <form className='space-y-4' onSubmit={(e) => e.preventDefault()}>
+                        <form className='space-y-4' onSubmit={handleRegister}>
                             <div>
                                 <label className='block mb-1'>Full Name</label>
                                 <input
-                                    ref={name}
                                     type='text'
+                                    name='fullName'
+                                    value={formData.fullName}
+                                    onChange={handleChange}
                                     placeholder='Full Name'
                                     className='w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500'
                                 />
@@ -152,8 +135,10 @@ const Login = () => {
                             <div>
                                 <label className='block mb-1'>Email</label>
                                 <input
-                                    ref={email}
                                     type='email'
+                                    name='email'
+                                    value={formData.email}
+                                    onChange={handleChange}
                                     placeholder='Email'
                                     className='w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500'
                                 />
@@ -161,8 +146,10 @@ const Login = () => {
                             <div>
                                 <label className='block mb-1'>Password</label>
                                 <input
-                                    ref={password}
                                     type='password'
+                                    name='password'
+                                    value={formData.password}
+                                    onChange={handleChange}
                                     placeholder='Create Password'
                                     className='w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-500'
                                 />
@@ -171,7 +158,6 @@ const Login = () => {
                                 className='w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 transition duration-300'
                                 type='submit'
                                 value='Register'
-                                onClick={handleButtonClick}
                             >
                                 Register
                             </button>

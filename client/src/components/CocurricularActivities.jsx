@@ -25,11 +25,11 @@ const CocurricularActivities = () => {
         totalMarks += weight;
       }
     });
-    return (totalMarks / 100) * 10;
+    return parseInt((totalMarks / 100) * 10);
   };
 
-  const inhouseScore = calculateScore(inhouseActivities, 10);
-  const outhouseScore = calculateScore(outhouseActivities, 10);
+  const inhouseScore = calculateScore(inhouseActivities, 14.287);
+  const outhouseScore = calculateScore(outhouseActivities, 17);
 
   return (
     <div className="flex flex-col lg:flex-row justify-center items-center space-y-8 lg:space-y-0 lg:space-x-12 p-8">

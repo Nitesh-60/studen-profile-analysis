@@ -1,117 +1,124 @@
-// server.js
-require('dotenv').config();
+// Import necessary modules
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('./models/User');
+const cors = require('cors');
 
+// Create an Express app
 const app = express();
-app.use(express.json());
+const PORT = 5000; // Choose your desired port
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect('mongodb+srv://pandeynitesh1302:nitesh123@cluster0.t4kbcur.mongodb.net/', {
   useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('Connected to MongoDB');
-})
-.catch((error) => {
-  console.error('Error connecting to MongoDB:', error);
+  useUnifiedTopology: true,
+});
+const User = mongoose.model('User', {
+  fullName: String,
+  email: String,
+  password: String,
 });
 
-
-// Middleware for authentication
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (token == null) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    req.user = user;
-    next();
-  });
+// Cors
+const allowedOrigins = ['http://localhost:5173']; // Add more origins as needed
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
 };
+app.use(cors(corsOptions));
 
-// User Registration
+// Middleware to parse JSON requests
+app.use(express.json());
+
+// Register endpoint
 app.post('/register', async (req, res) => {
   try {
-    // Extract username and password from request body
-    const { username, password } = req.body;
-
-    // Check if the username already exists
-    const existingUser = await User.findOne({ username });
+    // Check if the email is already registered
+    const existingUser = await User.findOne({ email: req.body.email });
     if (existingUser) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ message: 'Email already registered' });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash the password before storing
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-    // Create a new user record
-    const newUser = new User({ username, password: hashedPassword });
+    // Create a new user
+    const newUser = new User({
+      fullName: req.body.fullName,
+      email: req.body.email,
+      password: hashedPassword,
+    });
+
+    // Save the user to the database
     await newUser.save();
 
-    // Respond with success message
-    res.status(201).json({ message: 'User registered successfully' });
+    // Generate JWT token
+    const token = jwt.sign({ userId: newUser._id }, 'your-secret-key');
+
+    // Redirect to dataform page
+    res.json({ token });
   } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// User Login
+// Login endpoint
 app.post('/login', async (req, res) => {
   try {
-    // Extract username and password from request body
-    const { username, password } = req.body;
-
-    // Find the user by username
-    const user = await User.findOne({ username });
+    // Find user by email
+    const user = await User.findOne({ email: req.body.email });
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Compare the password
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Compare passwords
+    const passwordMatch = await bcrypt.compare(req.body.password, user.password);
     if (!passwordMatch) {
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(400).json({ message: 'Invalid email or password' });
     }
 
     // Generate JWT token
-    const accessToken = jwt.sign({ username: user.username }, process.env.JWT_SECRET);
+    const token = jwt.sign({ userId: user._id }, 'your-secret-key');
 
-    // Respond with success message and token
-    res.status(200).json({ message: 'Login successful', token: accessToken });
+    // Redirect to profile page
+    res.json({ token });
   } catch (error) {
-    console.error('Error logging in user:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ message: error.message });
   }
 });
 
-// User Logout
-app.post('/logout', authenticateToken, (req, res) => {
-    try {
-      // Add the token to the blacklist
-      const token = req.headers['authorization'].split(' ')[1];
-      tokenBlacklist.add(token);
-  
-      res.json({ message: 'Logged out successfully' });
-    } catch (error) {
-      console.error('Error logging out user:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  const token = req.header('Authorization');
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied' });
+  }
+  try {
+    const decoded = jwt.verify(token, 'your-secret-key');
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    res.status(400).json({ message: 'Invalid token' });
+  }
+};
+
+// Protected route for profile page
+app.get('/profile', verifyToken, (req, res) => {
+  res.json({ message: 'Profile page' });
 });
 
+// Protected route for dataform page
+app.get('/dataform', verifyToken, (req, res) => {
+  res.json({ message: 'Dataform page' });
+});
 
-const PORT = process.env.PORT || 3000;
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
-  
